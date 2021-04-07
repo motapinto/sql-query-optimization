@@ -80,38 +80,319 @@ For that, we created 3 different environemnts(X, Y and Z).
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
 ### Primary keys
 ```sql
-ALTER TABLE "YDOCENTES" ADD CONSTRAINT YDOCENTES_PKEY PRIMARY KEY("NR")
-ALTER TABLE "YDSD" ADD CONSTRAINT YDSD_PKEY PRIMARY KEY("NR", "ID")
-ALTER TABLE "YTIPOSAULA" ADD CONSTRAINT YTIPOSAULA_PKEY PRIMARY KEY("ID")
-ALTER TABLE "YOCORRENCIAS" ADD CONSTRAINT YOCORRENCIAS_PKEY PRIMARY KEY("CODIGO", "ANO LETIVO", "PERIODO")
-ALTER TABLE "YUCS" ADD CONSTRAINT YUCS_PKEY PRIMARY KEY("CODIGO")
+ALTER TABLE "YDOCENTES" 
+    ADD CONSTRAINT YDOCENTES_PKEY 
+    PRIMARY KEY("NR")
+    
+ALTER TABLE "YDSD" 
+    ADD CONSTRAINT YDSD_PKEY 
+    PRIMARY KEY("NR", "ID")
+    
+ALTER TABLE "YTIPOSAULA" 
+    ADD CONSTRAINT YTIPOSAULA_PKEY 
+    PRIMARY KEY("ID")
+
+ALTER TABLE "YOCORRENCIAS" 
+    ADD CONSTRAINT YOCORRENCIAS_PKEY 
+    PRIMARY KEY("CODIGO", "ANO_LETIVO", "PERIODO")
+    
+ALTER TABLE "YUCS" 
+    ADD CONSTRAINT YUCS_PKEY 
+    PRIMARY KEY("CODIGO")
 ```
 ### Foreign keys
 ```sql
-ALTER TABLE "YDSD" ADD CONSTRAINT YDSD_FKEY_YDOCENTES FOREIGN KEY("NR") REFERENCES "YDOCENTES"("NR")
-ALTER TABLE "YDSD" ADD CONSTRAINT YDSD_FKEY_YTIPOSAULA FOREIGN KEY("ID") REFERENCES "YTIPOSAULA"("ID")
-ALTER TABLE "YOCORRENCIAS" ADD CONSTRAINT YOCORRENCIAS_FKEY_YUCS FOREIGN KEY("CODIGO") REFERENCES "YUCS"("CODIGO")
+ALTER TABLE "YDSD" 
+    ADD CONSTRAINT YDSD_FKEY_YDOCENTES 
+    FOREIGN KEY("NR") 
+    REFERENCES "YDOCENTES"("NR")
+    
+ALTER TABLE "YDSD" 
+    ADD CONSTRAINT YDSD_FKEY_YTIPOSAULA 
+    FOREIGN KEY("ID") 
+    REFERENCES "YTIPOSAULA"("ID")
+    
+ALTER TABLE "YOCORRENCIAS" 
+    ADD CONSTRAINT YOCORRENCIAS_FKEY_YUCS 
+    FOREIGN KEY("CODIGO") 
+    REFERENCES "YUCS"("CODIGO")
+
+ALTER TABLE "YTIPOSAULA" 
+    ADD CONSTRAINT YTIPOSAULA_FKEY_YOCORRENCIAS
+    FOREIGN KEY("CODIGO", "ANO_LETIVO", "PERIODO") 
+    REFERENCES "YOCORRENCIAS"("CODIGO", "ANO_LETIVO", "PERIODO");
 ```
-### Setting Environment Z
+## Setting Environment Z
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
+### Primary keys
+```sql
+ALTER TABLE "ZDOCENTES" 
+    ADD CONSTRAINT ZDOCENTES_PKEY 
+    PRIMARY KEY("NR")
+    
+ALTER TABLE "ZDSD" 
+    ADD CONSTRAINT ZDSD_PKEY 
+    PRIMARY KEY("NR", "ID")
+    
+ALTER TABLE "ZTIPOSAULA" 
+    ADD CONSTRAINT ZTIPOSAULA_PKEY 
+    PRIMARY KEY("ID")
 
+ALTER TABLE "ZOCORRENCIAS" 
+    ADD CONSTRAINT ZOCORRENCIAS_PKEY 
+    PRIMARY KEY("CODIGO", "ANO_LETIVO", "PERIODO")
+    
+ALTER TABLE "ZUCS" 
+    ADD CONSTRAINT ZUCS_PKEY 
+    PRIMARY KEY("CODIGO")
+```
+### Foreign keys
+```sql
+ALTER TABLE "ZDSD" 
+    ADD CONSTRAINT ZDSD_FKEY_ZDOCENTES 
+    FOREIGN KEY("NR") 
+    REFERENCES "ZDOCENTES"("NR")
+    
+ALTER TABLE "ZDSD" 
+    ADD CONSTRAINT ZDSD_FKEY_ZTIPOSAULA 
+    FOREIGN KEY("ID") 
+    REFERENCES "ZTIPOSAULA"("ID")
+    
+ALTER TABLE "ZOCORRENCIAS" 
+    ADD CONSTRAINT ZOCORRENCIAS_FKEY_ZUCS 
+    FOREIGN KEY("CODIGO") 
+    REFERENCES "ZUCS"("CODIGO")
 
-## Indexes
+ALTER TABLE "ZTIPOSAULA" 
+    ADD CONSTRAINT ZTIPOSAULA_FKEY_ZOCORRENCIAS
+    FOREIGN KEY("CODIGO", "ANO_LETIVO", "PERIODO") 
+    REFERENCES "ZOCORRENCIAS"("CODIGO", "ANO_LETIVO", "PERIODO");
+```
+
+### Indexes
+One of the things that can most improve query times is to add indexes to **foreign keys**, when this is not done automatically. Furthermore, columns that are used in complex **joins**, in **where** conditions should also be considered.
+
+To determine the most appropriate index type we had in consideration the types of queries. Since all of them are ***SELECT*** conditions, it obviously had a considerable weight in our decisions.
+
+**Note:** All indexes will be justified for each query. Here is just a demonstration of all indexes.
+
+### Bitmap
+* Low cardinality 
+
 ### B-tree
-### Hash
-...
+* High cardinality
+```sql
+CREATE INDEX IX_ZUCS_DESIGNACAO ON ZUCS (designacao);
+CREATE INDEX IX_ZUCS_CODIGO_CURSO IN ZDSD(codigo, curso);
 
+CREATE INDEX IX_ZUCS_CURSO ON ZUCS (CURSO DESC);
+CREATE INDEX IX_ZTIPOSAULA_CODIGO ON ZTIPOSAULA(codigo) 
+CREATE INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ANO_LETIVO DESC);
+CREATE INDEX IX_ZTIPOSAULA_TIPO ON ZTIPOSAULA (TIPO);
+
+CREATE INDEX IX_ZDSD_ID IN ZDSD(ID);
+```
 
 ## Queries
 ### Query 1
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
+**Show the codigo, designacao, ano_letivo, inscritos, tipo, and turnos for the course ‘Bases de Dados’ of the program 275.**
+#### SQL Formulation
+```sql
+SELECT codigo, designacao, ano_letivo, inscritos, tipo, turnos
+FROM XUCS UCS 
+JOIN XOCORRENCIAS OCCURENCES USING (codigo)
+JOIN XTIPOSAULA CLASSTYPES USING (codigo, periodo, ano_letivo)
+WHERE UCS.curso = 275 AND UCS.designacao = 'Bases de Dados'
+```
+#### Result (in JSON format)
+```json
+{
+  "results" : [
+    {
+      "columns" : [
+        {
+          "name" : "CODIGO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "ANO_LETIVO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "DESIGNACAO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "INSCRITOS",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "TIPO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "TURNOS",
+          "type" : "NUMBER"
+        }
+      ],
+      "items" : [
+        {
+          "codigo" : "EIC3106",
+          "ano_letivo" : "2003/2004",
+          "designacao" : "Bases de Dados",
+          "inscritos" : 92,
+          "tipo" : "T",
+          "turnos" : 1
+        },
+        {
+          "codigo" : "EIC3106",
+          "ano_letivo" : "2003/2004",
+          "designacao" : "Bases de Dados",
+          "inscritos" : 92,
+          "tipo" : "TP",
+          "turnos" : 4
+        },
+        {
+          "codigo" : "EIC3106",
+          "ano_letivo" : "2004/2005",
+          "designacao" : "Bases de Dados",
+          "inscritos" : 114,
+          "tipo" : "T",
+          "turnos" : 1
+        },
+        {
+          "codigo" : "EIC3106",
+          "ano_letivo" : "2004/2005",
+          "designacao" : "Bases de Dados",
+          "inscritos" : 114,
+          "tipo" : "TP",
+          "turnos" : 4
+        },
+        {
+          "codigo" : "EIC3111",
+          "ano_letivo" : "2005/2006",
+          "designacao" : "Bases de Dados",
+          "inscritos" : "",
+          "tipo" : "T",
+          "turnos" : 1
+        },
+        {
+          "codigo" : "EIC3111",
+          "ano_letivo" : "2005/2006",
+          "designacao" : "Bases de Dados",
+          "inscritos" : "",
+          "tipo" : "TP",
+          "turnos" : 6
+        }
+      ]
+    }
+  ]
+}
+```
+#### Execution Plan
+|           | Environment X | Environment Y | Environment Z |
+| --------- | ------------- | ------------- | ------------- |
+| Cost      |   642         |   55          |     14        |
+
+##### Environment X
+![](https://i.imgur.com/ZxZJu4m.png)
+-
+##### Environment Y
+Since in this query there are two expensive join operations and a where clause, we can see that using primary and foreign keys have a great impact on the cost o the query.
+
+![](https://i.imgur.com/FdvOZhy.png)
+-
+##### Environment Z
+This are the indexes used to improve the cost of the query. It was also used the constraints defined from the previous environment. 
+```sql
+CREATE INDEX IX_ZUCS_DESIGNACAO ON ZUCS (tipo);
+CREATE INDEX IX_ZTIPOSAULA_CODIGO IN ZTIPOSAULA(codigo);
+```
+The first one is useful since the **designacao** column from **ZUCS** is used in the **WHERE** condition to get a UC with a specific designation.
+
+The second one is also very useful because it reduces the cost of the **hash joins** operations. It uses a composite index with the columns **codigo** and **curso**.
+
+![](https://i.imgur.com/ajCzJf9.png)
+
 ---
 ### Query 2
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
+**How many class hours of each type did the program 233 planned in year 2004/2005?**
+#### SQL Formulation
+```sql
+SELECT DISTINCT UCS.curso, CLASS_TYPES.ano_letivo, CLASS_TYPES.tipo, 
+    SUM(CLASS_TYPES.turnos * CLASS_TYPES.horas_turno) AS TOTAL_HOURS
+FROM XTIPOSAULA CLASS_TYPES 
+INNER JOIN XUCS UCS ON CLASS_TYPES.codigo = UCS.codigo
+WHERE CLASS_TYPES.ano_letivo='2004/2005' 
+    AND UCS.curso = '233'
+GROUP BY  UCS.curso, CLASS_TYPES.ano_letivo, CLASS_TYPES.tipo;
+```
+
+#### Result (in JSON format)
+```json
+{
+  "results" : [
+    {
+      "columns" : [
+        {
+          "name" : "CURSO",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "ANO_LETIVO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "TIPO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "TOTAL_HOURS",
+          "type" : "NUMBER"
+        }
+      ],
+      "items" : [
+        {
+          "curso" : 233,
+          "ano_letivo" : "2004/2005",
+          "tipo" : "TP",
+          "total_hours" : 697.5
+        },
+        {
+          "curso" : 233,
+          "ano_letivo" : "2004/2005",
+          "tipo" : "P",
+          "total_hours" : 581.5
+        },
+        {
+          "curso" : 233,
+          "ano_letivo" : "2004/2005",
+          "tipo" : "T",
+          "total_hours" : 308
+        }
+      ]
+    }
+  ]
+}
+```
+#### Execution Plan
+|           | Environment X | Environment Y | Environment Z |
+| --------- | ------------- | ------------- | ------------- |
+| Cost      |       50      |       50      |       10      |
+
+##### Environment X
+![](https://i.imgur.com/MYe0ihm.png)
+##### Environment Y
+![](https://i.imgur.com/ce9DCBu.png)
+##### Environment Z
+![](https://i.imgur.com/pSV16gi.png)
+
+
 ---
 ### Query 3.1
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
-
 **Which courses did have occurrences planned but did not get service assigned in year 2003/2004?***[Using NOT IN]*
 #### SQL Formulation
 ```sql
@@ -126,8 +407,16 @@ WHERE OCCURENCES.ano_letivo = '2003/2004'
         WHERE CLASS_TYPES.ano_letivo = '2003/2004'  
      )
 ```
-Try with materialized view or index view or normal view
-or another table to see if execution plan cost is reduced
+
+There was also a try to have a materialized view for a portion of the query using the following DDL statement
+```sql
+CREATE MATERIALIZED VIEW 
+PLANNED_UCS AS 
+SELECT DISTINCT codigo
+FROM XTIPOSAULA CLASS_TYPES
+INNER JOIN XDSD T_DISTRIBUTION ON CLASS_TYPES.id = T_DISTRIBUTION.id
+WHERE CLASS_TYPES.ano_letivo = '2003/2004';
+```
 #### Result (in JSON format)
 * *138 row*
 ```json
@@ -563,16 +852,38 @@ or another table to see if execution plan cost is reduced
 #### Execution Plan
 |           | Environment X | Environment Y | Environment Z |
 | --------- | ------------- | ------------- | ------------- |
-| Cost      |   670         |      86       |               |
-| Time (ms) |   106         |      55       |               |
+| Cost      |   670         |      86       |    51             |
 
 ##### Environment X
+Without the materialized view:
 ![](https://i.imgur.com/tMCBKS6.png)
-##### Environment Y
-![](https://i.imgur.com/UU6W6pH.png)
-##### Environment Z
 
-#### Conclusion
+With the materialized view:
+![](https://i.imgur.com/ovqITw3.png)
+
+##### Environment Y
+Without the materialized view:
+![](https://i.imgur.com/UU6W6pH.png)
+
+With the materialized view:
+![](https://i.imgur.com/ZtuEUGW.png)
+
+##### Environment Z
+This are the indexes used to improve the cost of the query. It was also used the constraints defined from the previous environment. 
+```sql
+CREATE INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ano_letivo DESC);
+CREATE INDEX IX_ZDSD_ID IN ZDSD(id);
+```
+The first one is useful since the **ano_letivo** column from **ZTIPOSAULA** is used in the **WHERE** condition to determine the planned ucs. We could also opt to create the index on all attribute from the foreign key but that would produce the same effect.
+
+The second one is also useful because the **primary key** on **ZDSD** is (nr, id) that creates a composite index on both attributes. The problem is that the composite index will work on statements that use only NR or both the nr and id columns. Since the **id** is used for the **JOIN** operation, that index also as an impact on the query cost.
+
+Without the materialized view:
+![](https://i.imgur.com/NStzLWm.png)
+
+With the materialized view:
+![](https://i.imgur.com/VG4bI7a.png)
+
 ---
 ### Query 3.2
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
@@ -592,28 +903,162 @@ LEFT OUTER JOIN (
 WHERE PLANNED_UCS.CODIGO IS NULL 
     AND ANO_LETIVO = '2003/2004'
 ```
-Try with materialized view or index view or normal view
-or another table to see if execution plan cost is reduced
+
 #### Result (in JSON format)
 * The same result as in [Query 3.1](#Query-3.1)
 #### Execution Plan
 |           | Environment X | Environment Y | Environment Z |
 | --------- | ------------- | ------------- | ------------- |
-| Cost      |   671         |      87       |               |
-| Time (ms) |   64          |      51       |               |
+| Cost      |   671         |      87       |    52           |
 
 ##### Environment X
 ![](https://i.imgur.com/erJTuaF.png)
 ##### Environment Y
 ![](https://i.imgur.com/BbyqtbR.png)
 ##### Environment Z
+* The same indexes were used as in [Query 3.1](#Query-3.1)
+
+![](https://i.imgur.com/wNx4sWX.png)
+
 ---
 ### Query 4
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
+**Who is the professor with more class hours for each type of class, in the academic
+year 2003/2004? Show the number and name of the professor, the type of class and the
+total of class hours times the factor.**
+
+
+#### SQL Formulation
+```sql
+create view test as
+    select  nr, nome, tipo, fator, SUM(turnos * horas_turno) as classHours
+    from (
+        select *
+        from (
+            select *
+            from xdocentes
+        )
+        join
+        (
+            select *
+            from xdsd
+        )
+        using(nr)
+    )
+    join 
+    (
+        select *
+        from xtiposaula
+        where ano_letivo = '2003/2004'
+    )
+    using(id) 
+    group by nr, nome, tipo, fator
+    order by classHours desc;
+
+select q2.nr, q2.nome, q1.tipo, q2.fator, q1.maxClassHours, q1.maxClassHours * q2.fator as finalValue
+from (
+    select tipo, MAX(classHours) as maxClassHours
+    from test
+    group by tipo
+    order by MAX(classHours) desc
+) q1, test q2
+where q1.tipo = q2.tipo AND
+q1.maxClassHours = q2.classHours
+
+```
+
+
+#### Result (in JSON format)
+```json=
+```
+#### Execution Plan
+|           | Environment X | Environment Y | Environment Z |
+| --------- | ------------- | ------------- | ------------- |
+| Cost      |               |               |               |
+
+##### Environment X
+![](https://i.imgur.com/aHuWh76.png)
+
+##### Environment Y
+![](https://i.imgur.com/uQgwH3c.png)
+
+##### Environment Z
 ---
 ### Query 5
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
 ---
 ### Query 6
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
+
+**Select the programs (curso) that have classes with all the existing types.**
+#### SQL Formulation
+```sql
+SELECT DISTINCT UCS.curso AS programm
+FROM ZUCS UCS JOIN ZTIPOSAULA CLASS_TYPES ON UCS.codigo = CLASS_TYPES.codigo
+GROUP BY UCS.curso
+HAVING COUNT(DISTINCT CLASS_TYPES.tipo) = (
+    SELECT COUNT(DISTINCT tipo)
+    FROM ZTIPOSAULA
+)     
+```
+
+#### Result (in JSON format)
+```json
+{
+  "results" : [
+    {
+      "columns" : [
+        {
+          "name" : "PROGRAMM",
+          "type" : "NUMBER"
+        }
+      ],
+      "items" : [
+        {
+          "programm" : 9461
+        },
+        {
+          "programm" : 4495
+        },
+        {
+          "programm" : 9508
+        },
+        {
+          "programm" : 2021
+        }
+      ]
+    }
+  ]
+}
+```
+#### Execution Plan
+|           | Environment X | Environment Y | Environment Z |
+| --------- | ------------- | ------------- | ------------- |
+| Cost      |   671         |      87       |    52         |
+
+##### Environment X
+![](https://i.imgur.com/DVNERWm.png)
+
+##### Environment Y
+In this query we can see that using primary and foreign keys didn't change the cost of the query, since the optimizer decided to do a full access to all tables, instead of a fast full access.
+
+![](https://i.imgur.com/jM7Vfo0.png)
+
+##### Environment Z
+This are the indexes used to improve the cost of the query. It was also used the constraints defined from the previous environment. 
+```sql
+CREATE INDEX IX_ZTIPOSAULA_TIPO ON ZTIPOSAULA (tipo);
+CREATE INDEX IX_ZUCS_CODIGO_CURSO IN ZDSD(codigo, curso);
+```
+The first one is useful since the **tipo** column from **ZTIPOSAULA** is used in the **HAVING** clause to determine if a course has all types of classes. 
+This makes the **HAVING** statement have a cost of 13 instead of 37. In spite of this, the total cost of the query won't change with this index.
+
+The second one is more useful because it reduces the cost of the **hash join** between **ZUCS** and **ZTIPOSAULA**. It uses a composite index with the columns **codigo** and **curso**.
+
+
+![](https://i.imgur.com/zIr0tTW.png)
+
+
+
 ---
+
