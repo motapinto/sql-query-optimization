@@ -6,6 +6,9 @@
     * Primary keys
     * Foreign keys
 * [Setting Environment Z](#Setting-Environment-Z)
+    * Primary keys
+    * Foreign keys
+    * Indexes
 * [Queries](#Queries)
     * [Query 1](#Query-1)
         * SQL Formulation
@@ -62,7 +65,7 @@
             * Environment X
             * Environment Y
             * Environment Z
-        * Conclusion
+    * [Conclusion](#Conclusion)
 
 
 
@@ -82,40 +85,40 @@ For that, we created 3 different environemnts(X, Y and Z).
 ```sql
 ALTER TABLE "YDOCENTES" 
     ADD CONSTRAINT YDOCENTES_PKEY 
-    PRIMARY KEY("NR")
+    PRIMARY KEY("NR");
     
 ALTER TABLE "YDSD" 
     ADD CONSTRAINT YDSD_PKEY 
-    PRIMARY KEY("NR", "ID")
+    PRIMARY KEY("NR", "ID");
     
 ALTER TABLE "YTIPOSAULA" 
     ADD CONSTRAINT YTIPOSAULA_PKEY 
-    PRIMARY KEY("ID")
+    PRIMARY KEY("ID");
 
 ALTER TABLE "YOCORRENCIAS" 
     ADD CONSTRAINT YOCORRENCIAS_PKEY 
-    PRIMARY KEY("CODIGO", "ANO_LETIVO", "PERIODO")
+    PRIMARY KEY("CODIGO", "ANO_LETIVO", "PERIODO");
     
 ALTER TABLE "YUCS" 
     ADD CONSTRAINT YUCS_PKEY 
-    PRIMARY KEY("CODIGO")
+    PRIMARY KEY("CODIGO");
 ```
 ### Foreign keys
 ```sql
 ALTER TABLE "YDSD" 
     ADD CONSTRAINT YDSD_FKEY_YDOCENTES 
     FOREIGN KEY("NR") 
-    REFERENCES "YDOCENTES"("NR")
+    REFERENCES "YDOCENTES"("NR");
     
 ALTER TABLE "YDSD" 
     ADD CONSTRAINT YDSD_FKEY_YTIPOSAULA 
     FOREIGN KEY("ID") 
-    REFERENCES "YTIPOSAULA"("ID")
+    REFERENCES "YTIPOSAULA"("ID");
     
 ALTER TABLE "YOCORRENCIAS" 
     ADD CONSTRAINT YOCORRENCIAS_FKEY_YUCS 
     FOREIGN KEY("CODIGO") 
-    REFERENCES "YUCS"("CODIGO")
+    REFERENCES "YUCS"("CODIGO");
 
 ALTER TABLE "YTIPOSAULA" 
     ADD CONSTRAINT YTIPOSAULA_FKEY_YOCORRENCIAS
@@ -128,40 +131,40 @@ ALTER TABLE "YTIPOSAULA"
 ```sql
 ALTER TABLE "ZDOCENTES" 
     ADD CONSTRAINT ZDOCENTES_PKEY 
-    PRIMARY KEY("NR")
+    PRIMARY KEY("NR");
     
 ALTER TABLE "ZDSD" 
     ADD CONSTRAINT ZDSD_PKEY 
-    PRIMARY KEY("NR", "ID")
+    PRIMARY KEY("NR", "ID");
     
 ALTER TABLE "ZTIPOSAULA" 
     ADD CONSTRAINT ZTIPOSAULA_PKEY 
-    PRIMARY KEY("ID")
+    PRIMARY KEY("ID");
 
 ALTER TABLE "ZOCORRENCIAS" 
     ADD CONSTRAINT ZOCORRENCIAS_PKEY 
-    PRIMARY KEY("CODIGO", "ANO_LETIVO", "PERIODO")
+    PRIMARY KEY("CODIGO", "ANO_LETIVO", "PERIODO");
     
 ALTER TABLE "ZUCS" 
     ADD CONSTRAINT ZUCS_PKEY 
-    PRIMARY KEY("CODIGO")
+    PRIMARY KEY("CODIGO");
 ```
 ### Foreign keys
 ```sql
 ALTER TABLE "ZDSD" 
     ADD CONSTRAINT ZDSD_FKEY_ZDOCENTES 
     FOREIGN KEY("NR") 
-    REFERENCES "ZDOCENTES"("NR")
+    REFERENCES "ZDOCENTES"("NR");
     
 ALTER TABLE "ZDSD" 
     ADD CONSTRAINT ZDSD_FKEY_ZTIPOSAULA 
     FOREIGN KEY("ID") 
-    REFERENCES "ZTIPOSAULA"("ID")
+    REFERENCES "ZTIPOSAULA"("ID");
     
 ALTER TABLE "ZOCORRENCIAS" 
     ADD CONSTRAINT ZOCORRENCIAS_FKEY_ZUCS 
     FOREIGN KEY("CODIGO") 
-    REFERENCES "ZUCS"("CODIGO")
+    REFERENCES "ZUCS"("CODIGO");
 
 ALTER TABLE "ZTIPOSAULA" 
     ADD CONSTRAINT ZTIPOSAULA_FKEY_ZOCORRENCIAS
@@ -174,24 +177,17 @@ One of the things that can most improve query times is to add indexes to **forei
 
 To determine the most appropriate index type we had in consideration the types of queries. Since all of them are ***SELECT*** conditions, it obviously had a considerable weight in our decisions.
 
-**Note:** All indexes will be justified for each query. Here is just a demonstration of all indexes.
-
-### Bitmap
-* Low cardinality 
-
-### B-tree
-* High cardinality
 ```sql
 CREATE INDEX IX_ZUCS_DESIGNACAO ON ZUCS (designacao);
-CREATE INDEX IX_ZUCS_CODIGO_CURSO IN ZDSD(codigo, curso);
-
-CREATE INDEX IX_ZUCS_CURSO ON ZUCS (CURSO DESC);
-CREATE INDEX IX_ZTIPOSAULA_CODIGO ON ZTIPOSAULA(codigo) 
-CREATE INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ANO_LETIVO DESC);
-CREATE INDEX IX_ZTIPOSAULA_TIPO ON ZTIPOSAULA (TIPO);
-
-CREATE INDEX IX_ZDSD_ID IN ZDSD(ID);
+CREATE INDEX IX_ZUCS_CODIGO_CURSO ON ZUCS(codigo, curso);
+CREATE INDEX IX_ZUCS_CURSO ON ZUCS (curso DESC);
+CREATE INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ano_letivo DESC);
+CREATE INDEX IX_ZTIPOSAULA_CODIGO ON ZTIPOSAULA(codigo);
+CREATE INDEX IX_ZTIPOSAULA_TIPO ON ZTIPOSAULA (tipo);
+CREATE INDEX IX_ZDSD_ID ON ZDSD(id);
 ```
+
+**Note:** All indexes will be justified for each query. Here is just a demonstration of all indexes.
 
 ## Queries
 ### Query 1
@@ -205,6 +201,7 @@ JOIN XOCORRENCIAS OCCURENCES USING (codigo)
 JOIN XTIPOSAULA CLASSTYPES USING (codigo, periodo, ano_letivo)
 WHERE UCS.curso = 275 AND UCS.designacao = 'Bases de Dados'
 ```
+
 #### Result (in JSON format)
 ```json
 {
@@ -299,21 +296,23 @@ WHERE UCS.curso = 275 AND UCS.designacao = 'Bases de Dados'
 ![](https://i.imgur.com/ZxZJu4m.png)
 -
 ##### Environment Y
-Since in this query there are two expensive join operations and a where clause, we can see that using primary and foreign keys have a great impact on the cost o the query.
+Since in this query there are two expensive join operations and a where clause, we can see that using primary and foreign keys have a great impact on the cost of the query.
 
 ![](https://i.imgur.com/FdvOZhy.png)
 -
 ##### Environment Z
 This are the indexes used to improve the cost of the query. It was also used the constraints defined from the previous environment. 
 ```sql
-CREATE INDEX IX_ZUCS_DESIGNACAO ON ZUCS (tipo);
-CREATE INDEX IX_ZTIPOSAULA_CODIGO IN ZTIPOSAULA(codigo);
+CREATE INDEX IX_ZUCS_DESIGNACAO ON ZUCS (designacao);
+CREATE INDEX IX_ZTIPOSAULA_CODIGO ON ZTIPOSAULA(codigo);
+CREATE INDEX IX_ZUCS_CODIGO_CURSO ON ZUCS(codigo, curso);
 ```
-The first one is useful since the **designacao** column from **ZUCS** is used in the **WHERE** condition to get a UC with a specific designation.
+The first and the second one are useful since the **curso** and **designacao** columns from **ZUCS** are used in the **WHERE** condition to get a UC from a specific degree with a specific designation.
 
-The second one is also very useful because it reduces the cost of the **hash joins** operations. It uses a composite index with the columns **codigo** and **curso**.
+The third one is also very useful because it reduces the cost of the **hash joins** operations. It uses a composite index with the columns **codigo** and **curso**.
 
-![](https://i.imgur.com/ajCzJf9.png)
+![](https://i.imgur.com/JKC4Zl3.png)
+
 
 ---
 ### Query 2
@@ -385,10 +384,21 @@ GROUP BY  UCS.curso, CLASS_TYPES.ano_letivo, CLASS_TYPES.tipo;
 ##### Environment X
 ![](https://i.imgur.com/MYe0ihm.png)
 ##### Environment Y
+Compared to environment X, primary and foreign key constraints didn't have any impact on the cost of the query.
+
 ![](https://i.imgur.com/ce9DCBu.png)
 ##### Environment Z
-![](https://i.imgur.com/pSV16gi.png)
 
+These are the indexes used to improve the cost of the query. Additionally, the constraints defined from the previous environment were also used. 
+
+```sql
+CREATE INDEX IX_ZUCS_CURSO ON ZUCS (curso DESC);
+CREATE INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ano_letivo DESC);
+```
+
+Both indexes are useful since the **curso** column from **ZUCS** and **ano_letivo** column from **ZTIPOSAULA** are used in the **WHERE** condition to retrieve a specific program from a specific year.
+
+![](https://i.imgur.com/wLTXvzS.png)
 
 ---
 ### Query 3.1
@@ -417,6 +427,19 @@ FROM XTIPOSAULA CLASS_TYPES
 INNER JOIN XDSD T_DISTRIBUTION ON CLASS_TYPES.id = T_DISTRIBUTION.id
 WHERE CLASS_TYPES.ano_letivo = '2003/2004';
 ```
+
+```sql
+SELECT DISTINCT UCS.codigo
+FROM XOCORRENCIAS OCCURENCES
+INNER JOIN XUCS UCS ON OCCURENCES.codigo = UCS.codigo 
+WHERE OCCURENCES.ano_letivo = '2003/2004'
+    AND NOT EXISTS  (
+        SELECT codigo
+        FROM PLANNED_UCS
+        WHERE codigo = OCCURENCES.codigo
+    )
+```
+
 #### Result (in JSON format)
 * *138 row*
 ```json
@@ -852,7 +875,9 @@ WHERE CLASS_TYPES.ano_letivo = '2003/2004';
 #### Execution Plan
 |           | Environment X | Environment Y | Environment Z |
 | --------- | ------------- | ------------- | ------------- |
-| Cost      |   670         |      86       |    51             |
+| Cost without Mat. View     |      670      |      86       |      51       |
+| Cost with Mat. View      |      610      |      31       |      31       |
+
 
 ##### Environment X
 Without the materialized view:
@@ -862,6 +887,8 @@ With the materialized view:
 ![](https://i.imgur.com/ovqITw3.png)
 
 ##### Environment Y
+Compared to environment X, primary and foreign key constraints had a great impact on the query performance. This can be seen in the query plan where it's used a fast full scan twice in the query.
+
 Without the materialized view:
 ![](https://i.imgur.com/UU6W6pH.png)
 
@@ -872,7 +899,7 @@ With the materialized view:
 This are the indexes used to improve the cost of the query. It was also used the constraints defined from the previous environment. 
 ```sql
 CREATE INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ano_letivo DESC);
-CREATE INDEX IX_ZDSD_ID IN ZDSD(id);
+CREATE INDEX IX_ZDSD_ID ON ZDSD(id);
 ```
 The first one is useful since the **ano_letivo** column from **ZTIPOSAULA** is used in the **WHERE** condition to determine the planned ucs. We could also opt to create the index on all attribute from the foreign key but that would produce the same effect.
 
@@ -909,11 +936,12 @@ WHERE PLANNED_UCS.CODIGO IS NULL
 #### Execution Plan
 |           | Environment X | Environment Y | Environment Z |
 | --------- | ------------- | ------------- | ------------- |
-| Cost      |   671         |      87       |    52           |
+| Cost      |      671      |      87       |       52      |
 
 ##### Environment X
 ![](https://i.imgur.com/erJTuaF.png)
 ##### Environment Y
+Compared to environment X, primary and foreign key constraints didn't have any impact on the cost of the query since the access done was a full access.
 ![](https://i.imgur.com/BbyqtbR.png)
 ##### Environment Z
 * The same indexes were used as in [Query 3.1](#Query-3.1)
@@ -923,69 +951,346 @@ WHERE PLANNED_UCS.CODIGO IS NULL
 ---
 ### Query 4
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
-**Who is the professor with more class hours for each type of class, in the academic
-year 2003/2004? Show the number and name of the professor, the type of class and the
-total of class hours times the factor.**
+**Who is the professor with more class hours for each type of class, in the academic year 2003/2004? 
+Show the number and name of the professor, the type of class and the total of class hours times the factor.**
 
 
 #### SQL Formulation
 ```sql
-create view test as
-    select  nr, nome, tipo, fator, SUM(turnos * horas_turno) as classHours
-    from (
-        select *
-        from (
-            select *
-            from xdocentes
-        )
-        join
-        (
-            select *
-            from xdsd
-        )
-        using(nr)
+SELECT nr, nome, tipo, max_hours
+FROM  (
+    SELECT MAX(nr) AS nr, tipo, MAX(total_hours) AS max_hours
+    FROM (
+        SELECT nr, tipo, SUM(horas * fator) AS total_hours
+        FROM XTIPOSAULA
+        NATURAL JOIN XDSD 
+        WHERE ano_letivo = '2003/2004'
+        GROUP BY nr, tipo
     )
-    join 
-    (
-        select *
-        from xtiposaula
-        where ano_letivo = '2003/2004'
-    )
-    using(id) 
-    group by nr, nome, tipo, fator
-    order by classHours desc;
-
-select q2.nr, q2.nome, q1.tipo, q2.fator, q1.maxClassHours, q1.maxClassHours * q2.fator as finalValue
-from (
-    select tipo, MAX(classHours) as maxClassHours
-    from test
-    group by tipo
-    order by MAX(classHours) desc
-) q1, test q2
-where q1.tipo = q2.tipo AND
-q1.maxClassHours = q2.classHours
-
+    GROUP BY TIPO
+) TMP
+NATURAL JOIN XDOCENTES 
 ```
 
 
 #### Result (in JSON format)
-```json=
+```json
+{
+  "results" : [
+    {
+      "columns" : [
+        {
+          "name" : "NR",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "NOME",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "TIPO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "MAX_HOURS",
+          "type" : "NUMBER"
+        }
+      ],
+      "items" : [
+        {
+          "nr" : 246626,
+          "nome" : "Jorge Manuel Gomes Barbosa",
+          "tipo" : "OT",
+          "max_hours" : 3.5
+        },
+        {
+          "nr" : 908100,
+          "nome" : "Armínio de Almeida Teixeira",
+          "tipo" : "P",
+          "max_hours" : 30
+        },
+        {
+          "nr" : 908290,
+          "nome" : "José Manuel Miguez Araújo",
+          "tipo" : "TP",
+          "max_hours" : 26
+        },
+        {
+          "nr" : 909330,
+          "nome" : "Nuno Filipe da Cunha Nogueira",
+          "tipo" : "T",
+          "max_hours" : 30.67
+        }
+      ]
+    }
+  ]
+}
 ```
 #### Execution Plan
 |           | Environment X | Environment Y | Environment Z |
 | --------- | ------------- | ------------- | ------------- |
-| Cost      |               |               |               |
+| Cost      |      69       |      69       |      38       |
 
 ##### Environment X
-![](https://i.imgur.com/aHuWh76.png)
+![](https://i.imgur.com/t8eEMEW.png)
 
 ##### Environment Y
-![](https://i.imgur.com/uQgwH3c.png)
+Compared to environment X, primary and foreign key constraints didn't have any impact on the cost of the query.
+
+![](https://i.imgur.com/8niDVsA.png)
 
 ##### Environment Z
+Only one index was used to  improve the cost of the query. Additionally, the constraints defined from the previous environment were also used. 
+
+```sql
+CREATE INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ano_letivo DESC);
+```
+
+This index is useful since the **ano_letivo** column from **ZTIPOSAULA** is used in the **WHERE** condition to retrieve a specific year.
+
+![](https://i.imgur.com/UGzvPq9.png)
+
+
 ---
 ### Query 5
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
+
+**Compare the execution plans (just the environment Z) and the index sizes for the query giving the course code, the academic year, the period, and number of hours of the type ‘OT’ in the academic years of 2002/2003 and 2003/2004.**
+
+* a) With a B-tree index on the type and academic year columns of the
+ZTIPOSAULA table;
+* b) With a bitmap index on the type and academic year columns of the
+ZTIPOSAULA table;
+
+#### B-tree index
+* High cardinality
+```sql
+CREATE INDEX IX_ZTIPOSAULA_TIPO ON ZTIPOSAULA (TIPO);
+CREATE INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ANO_LETIVO DESC);
+```
+
+#### Bitmap index
+* Low cardinality 
+
+```sql
+CREATE BITMAP INDEX IX_ZTIPOSAULA_TIPO ON ZTIPOSAULA (TIPO);
+CREATE BITMAP INDEX IX_ZTIPOSAULA_ANOLETIVO ON ZTIPOSAULA (ANO_LETIVO DESC);
+```
+#### SQL Formulation
+```sql
+SELECT codigo, ano_letivo, periodo, horas_turno * turnos as NumberOfHours
+FROM ZTIPOSAULA
+WHERE (ano_letivo = '2002/2003' OR ano_letivo = '2003/2004') AND (tipo = 'OT')
+```
+
+#### Result (in JSON format)
+```json
+{
+  "results" : [
+    {
+      "columns" : [
+        {
+          "name" : "CODIGO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "ANO_LETIVO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "PERIODO",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "NUMBEROFHOURS",
+          "type" : "NUMBER"
+        }
+      ],
+      "items" : [
+        {
+          "codigo" : "EIC5202",
+          "ano_letivo" : "2002/2003",
+          "periodo" : "2S",
+          "numberofhours" : 27
+        },
+        {
+          "codigo" : "EIC5202",
+          "ano_letivo" : "2003/2004",
+          "periodo" : "2S",
+          "numberofhours" : 24
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Execution Plan
+|                  | Environment Z a) | Environment Z b) |
+| ---------------- | ---------------- | ---------------- |
+| Cost             |        5         |        8        | 
+
+
+##### Environment Z a)
+![](https://i.imgur.com/KzE05Wv.png)
+
+In Oracle, full table scans have less cost than index range scans in cases when accessing a large fraction of the blocks in a table. The reason is that full table scans can use larger I/O calls what is cheaper than making many smaller calls.
+
+But, Oracle optimizer uses a **range scan** when it finds one or more leading columns of an index specified in condition as it is in this task.
+
+##### Environment Z b)
+![](https://i.imgur.com/PtygCxP.png)
+
+The way of accessing the attributes is similar to the one on the execution with the B-tree index, using an index access and a table access by index rowid, however, the query has a higher cost when executed with a bitmap index.
+
+#### Index sizes
+* Query to get index sizes:
+```sql
+SELECT  index_name, index_type, table_name, uniqueness, blevel, leaf_blocks, distinct_keys, num_rows
+FROM user_indexes;
+```
+![](https://i.imgur.com/g367kMB.png)
+
+
+#### Result (in JSON format) - B-tree indexes
+```json
+{
+  "results" : [
+    {
+      "columns" : [
+        {
+          "name" : "INDEX_NAME",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "INDEX_TYPE",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "TABLE_NAME",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "UNIQUENESS",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "BLEVEL",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "LEAF_BLOCKS",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "DISTINCT_KEYS",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "NUM_ROWS",
+          "type" : "NUMBER"
+        }
+      ],
+      "items" : [
+        {
+        "index_name" : "IX_ZTIPOSAULA_TIPO",
+          "index_type" : "NORMAL",
+          "table_name" : "ZTIPOSAULA",
+          "uniqueness" : "NONUNIQUE",
+          "blevel" : 1,
+          "leaf_blocks" : 39,
+          "distinct_keys" : 5,
+          "num_rows" : 21019
+        },
+        {
+          "index_name" : "IX_ZTIPOSAULA_ANOLETIVO",
+          "index_type" : "FUNCTION-BASED NORMAL",
+          "table_name" : "ZTIPOSAULA",
+          "uniqueness" : "NONUNIQUE",
+          "blevel" : 1,
+          "leaf_blocks" : 65,
+          "distinct_keys" : 19,
+          "num_rows" : 21019
+        }
+      ]
+    }
+  ]
+}
+
+```
+#### Result (in JSON format) - Bitmap indexes
+Under is showed part of JSON regarding indexes from task 5.
+```json
+{
+  "results" : [
+    {
+      "columns" : [
+        {
+          "name" : "INDEX_NAME",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "INDEX_TYPE",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "TABLE_NAME",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "UNIQUENESS",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "BLEVEL",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "LEAF_BLOCKS",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "DISTINCT_KEYS",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "NUM_ROWS",
+          "type" : "NUMBER"
+        }
+      ],
+      "items" : [
+        {
+          "index_name" : "IX_ZTIPOSAULA_ANOLETIVO",
+          "index_type" : "BITMAP",
+          "table_name" : "ZTIPOSAULA",
+          "uniqueness" : "NONUNIQUE",
+          "blevel" : 0,
+          "leaf_blocks" : 1,
+          "distinct_keys" : 19,
+          "num_rows" : 19
+        },
+        {
+          "index_name" : "IX_ZTIPOSAULA_TIPO",
+          "index_type" : "BITMAP",
+          "table_name" : "ZTIPOSAULA",
+          "uniqueness" : "NONUNIQUE",
+          "blevel" : 1,
+          "leaf_blocks" : 2,
+          "distinct_keys" : 5,
+          "num_rows" : 5
+        }
+      ]
+    }
+  ]
+}
+
+```
+Two columns that are important to look at are: "leaf_blocks" as the number of blocks used by the index at the lowest and largest level, and "num_rows" as the number of rows that are indexed.
+
+Looking at the given JSON results above for both indexes we can compare "leaf_blocks" values. If the "leaf_blocks" values is lager that means index consumes more space. It is visible that bitmap indexes need drastically less space than their B-tree equivalents. Also, with B-tree index we have one entry in the "leaf_blocks" for each row in the table but with Bitmap index no. 
+
+If we take a look at the "num_rows" we can see that bitmap indexes also have significantly smaller value than b-tree indexes. The reason is because bitmap indexes store a single key value that points to many rows and because of that, there will be significantly less key values (num_rows) in a bitmap index than in the table it points to.
+
 ---
 ### Query 6
 ###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
@@ -994,11 +1299,11 @@ q1.maxClassHours = q2.classHours
 #### SQL Formulation
 ```sql
 SELECT DISTINCT UCS.curso AS programm
-FROM ZUCS UCS JOIN ZTIPOSAULA CLASS_TYPES ON UCS.codigo = CLASS_TYPES.codigo
+FROM XUCS UCS JOIN XTIPOSAULA CLASS_TYPES ON UCS.codigo = CLASS_TYPES.codigo
 GROUP BY UCS.curso
 HAVING COUNT(DISTINCT CLASS_TYPES.tipo) = (
     SELECT COUNT(DISTINCT tipo)
-    FROM ZTIPOSAULA
+    FROM XTIPOSAULA
 )     
 ```
 
@@ -1034,7 +1339,7 @@ HAVING COUNT(DISTINCT CLASS_TYPES.tipo) = (
 #### Execution Plan
 |           | Environment X | Environment Y | Environment Z |
 | --------- | ------------- | ------------- | ------------- |
-| Cost      |   671         |      87       |    52         |
+| Cost      |       51      |      51       |       45      |
 
 ##### Environment X
 ![](https://i.imgur.com/DVNERWm.png)
@@ -1048,7 +1353,7 @@ In this query we can see that using primary and foreign keys didn't change the c
 This are the indexes used to improve the cost of the query. It was also used the constraints defined from the previous environment. 
 ```sql
 CREATE INDEX IX_ZTIPOSAULA_TIPO ON ZTIPOSAULA (tipo);
-CREATE INDEX IX_ZUCS_CODIGO_CURSO IN ZDSD(codigo, curso);
+CREATE INDEX IX_ZUCS_CODIGO_CURSO ON ZUCS(codigo, curso);
 ```
 The first one is useful since the **tipo** column from **ZTIPOSAULA** is used in the **HAVING** clause to determine if a course has all types of classes. 
 This makes the **HAVING** statement have a cost of 13 instead of 37. In spite of this, the total cost of the query won't change with this index.
@@ -1059,6 +1364,19 @@ The second one is more useful because it reduces the cost of the **hash join** b
 ![](https://i.imgur.com/zIr0tTW.png)
 
 
-
 ---
 
+# Conclusion
+###### *Shortcut:* <ins>[To the top](#Table-of-Contents)</ins>
+
+We learned that the first thing to do when trying to optimize queries is to add the primary and foreign keys constraints since most queries this is where the cost was substantially lower. We also learned about query optimization, where different formulations can lead to very distinct results, such as doing unnecessary joins, complex operations, etc.
+
+Moreover, the B-tree indexes reduced even further the cost of most queries. Our motto for adding them was to first add on columns used in joins. These columns most commonly refer to foreign keys, where, in some environments, such as Oracle SQL Developer, this is not done automatically. Additionally, we also added indexes to columns used in **WHERE** conditions. 
+
+Apart from single-column indexes, we also used composite indexes in more than one query to reduce the overall number of indexes (and their size).
+
+Although we explored Bitmap indexes, they were not used since there isn't any column that needs an index while having low cardinality, i.e., where columns have lots of duplicate values.
+
+Finally, we also tried to experiment with **MATERIALIZED VIEWS** (*reference to [Query 3.1](#Query-3.1)*) that gave us better results but wasn't explored in too much detail due to time constraints.
+
+In conclusion, we learned a lot about query optimization in SQL and indexes during this project. In future work, we can further improve the results and keep learning, as this process could take some time before reaching an optimal solution for all queries.
